@@ -28,7 +28,7 @@ class BandMatrix{
         a = m.a.copy();
         al = m.al.copy();
     }
-    public static inline function copy( from_:Vector<BandMatrix>, fromIndex: Int
+    public static /* inline */ function copy( from_:Vector<BandMatrix>, fromIndex: Int
                         , to_: Vector<BandMatrix>, toIndex: Int
                         , len: Int ){
         for( i in 0...len ) { to_[ i + toIndex ].copyFrom( from_[ i + fromIndex ] ); }
@@ -56,16 +56,58 @@ abstract PointType( String ) {
 }
 /// IBezierContext yet to decide on this.
 class Spiro {
-    public static inline var N: Int = 4;
-    public static inline function hyp( x: Float, y: Float ){
+    public static function spiroCPsToBezier0( spiros: Vector<ControlPoint>, n: Int, isClosed: Bool, bc: IBezierContext ):Bool {
+            var s: Vector<Segment>;
+            if( n <= 0 ) return false;
+            if( isClosed ){
+                s = runSpiro( spiros, n );
+            } else {
+                var oldty_start = spiros[ 0 ].pointType;
+                var oldty_end   = spiros[ n - 1 ].pointType;
+                spiros[ 0 ].pointType = OpenContour;
+                spiros[ n - 1 ].pointType = EndOpenContour;
+                s = runSpiro( spiros, n );
+                spiros[ n - 1 ].pointType = oldty_end;
+                spiros[0].pointType = oldty_start;
+            }
+            trace( ' s ' + s );
+            if( s != null ){
+                trace('spiro_to_bpath');
+                spiro_to_bpath( s, n, bc );
+                return true; // success
+            }
+            return false; // spiro did not converge or encountered non-finite values
+    }
+    public static function taggedSpiroCPsToBezier0( spiros: Vector<ControlPoint>, bc: IBezierContext ): Bool {
+        var s: Vector<Segment>;
+        var n = 0;
+        var pointType: PointType;
+        while( true ){
+            pointType = spiros[ n ].pointType;
+            if( pointType == End || pointType == EndOpenContour ) break;
+            if( n >= spiros.length ) return false; // invalid input
+            ++n;
+        }
+        pointType = spiros[ n ].pointType;
+        if( pointType == EndOpenContour ) ++n;
+        if( n <= 0 ) return false; // invalid input
+        s = runSpiro( spiros, n );
+        if( s != null ){
+            spiro_to_bpath( s, n, bc );
+            return true; // success
+        }
+        return false; // spiro did not converge or encountered non-finite values
+    }
+    public static /* inline */ var N: Int = 4;
+    public static /* inline */ function hyp( x: Float, y: Float ){
         return Math.sqrt( x * x + y * y );
     }
-    public static inline function copyFloats( from_:Vector<Float>, fromIndex: Int
+    public static /* inline */ function copyFloats( from_:Vector<Float>, fromIndex: Int
                         , to_: Vector<Float>, toIndex: Int
                         , len: Int ){
         for( i in 0...len ) { to_[ i + toIndex ] = from_[ i + fromIndex ]; }
     }
-    public static inline function integrate( ks: Vector<Float>, p: Point, n: Int ){
+    public static /* inline */ function integrate( ks: Vector<Float>, p: Point, n: Int ){
         var th1 = ks[0];
         var th2 = 0.5 * ks[1];
         var th3 = (1.0 / 6) * ks[2];
@@ -161,7 +203,7 @@ class Spiro {
         p.x = x * ds;
         p.y = y * ds;
     }
-    public static inline function computeEnds( ks: Vector<Float>, ends:Vector<Vector<Float>>, seg_ch: Float ): Float {
+    public static /* inline */ function computeEnds( ks: Vector<Float>, ends:Vector<Vector<Float>>, seg_ch: Float ): Float {
         var p : Point = { x: 0, y: 0 };
         integrate( ks, p, N );
         var ch = hyp( p.x, p.y );
@@ -187,7 +229,7 @@ class Spiro {
         ends[ 1 ][ 3 ] = k2_even + k2_odd;
         return l;
     }
-    public static inline function pderivs( s: Segment, ends: Vector<Vector<Float>>, derivs: Vector<Vector<Vector<Float>>>, jinc: Int ){
+    public static /* inline */ function pderivs( s: Segment, ends: Vector<Vector<Float>>, derivs: Vector<Vector<Vector<Float>>>, jinc: Int ){
         var recip_d = 2e6;
         var delta = 1. / recip_d;
         var try_ks = new Vector<Float>(4);
@@ -202,24 +244,24 @@ class Spiro {
             for( k in 0...2 ) for ( j in 0...4 ) derivs[ j ][ k ][ i ] = recip_d * ( try_ends[ k ][ j ] - ends[ k ][ j ] );
         }
     }
-    public static inline function mod2pi( th: Float ){
+    public static /* inline */ function mod2pi( th: Float ){
         var u = th / (2 * Math.PI);
         return 2 * Math.PI * (u - Math.floor(u + 0.5));
     }
-    public static inline function setupPath( src:Vector<ControlPoint>, n: Int ): Vector<Segment> {
+    public static /* inline */ function setupPath( src:Vector<ControlPoint>, n: Int ): Vector<Segment> {
         // Verify that input values are within realistic limits
         var r: Vector<Segment> = null;
         var rValid: Bool = true;
         for( i in 0...n ){
-            if( Math.isFinite( src[i].x ) || Math.isFinite( src[i].y ) ) {
+            if( !Math.isFinite( src[ i ].x ) || !Math.isFinite( src[ i ].y ) ) {
                 r = null;
                 rValid = false;
                 break;
             }
         }
+        trace( 'setupPath rValid =' + rValid );
         if( rValid ) {
             var n_seg = src[0].pointType == OpenContour ? n - 1 : n;
-
             r = new Vector<Segment>( n_seg + 1 );
             for( j in 0...( n_seg + 1 )) {
                 r[ j ] = new Segment();
@@ -235,6 +277,7 @@ class Spiro {
                 seg.ks[ 2 ] = 0.0;
                 seg.ks[ 3 ] = 0.0;
             }
+            trace( '... r ' + r );
             r[ n_seg ].x = src[ n_seg % n ].x;
             r[ n_seg ].y = src[ n_seg % n ].y;
             r[ n_seg ].pointType = src[ n_seg % n ].pointType;
@@ -266,10 +309,10 @@ class Spiro {
                 }
             }
         }
-            
+        
         return r;
     }
-    public static inline function bandec11( m: Vector<BandMatrix>, perm: Vector<Int>, n: Int ){
+    public static /* inline */ function bandec11( m: Vector<BandMatrix>, perm: Vector<Int>, n: Int ){
         var j2: Int;
         var pivot: Int;
         var pivotVal: Float;
@@ -316,7 +359,7 @@ class Spiro {
             }
         }
     }
-    public static inline function banbks11( m: Vector<BandMatrix>, perm: Vector<Int>, v: Vector<Float>, n: Int ){
+    public static /* inline */ function banbks11( m: Vector<BandMatrix>, perm: Vector<Int>, v: Vector<Float>, n: Int ){
         var tmp: Float;
         var x: Float;
         // forward substitution
@@ -343,7 +386,7 @@ class Spiro {
             i--;
         }
     }
-    public static inline function computeJinc( ty0: PointType, ty1: PointType ){
+    public static /* inline */ function computeJinc( ty0: PointType, ty1: PointType ){
         var jinc: Int = 0;
         if( ty0 == G4 || ty1 == G4 || ty0 == Right || ty1 == Left ){
             jinc = 4;
@@ -360,12 +403,12 @@ class Spiro {
         }
         return jinc;
     }
-    public static inline function countVec( s: Vector<Segment>, nseg: Int ){
+    public static /* inline */ function countVec( s: Vector<Segment>, nseg: Int ){
         var n = 0;
         for( i in 0...nseg ) n += computeJinc( s[ i ].pointType, s[ i + 1 ].pointType);
         return n;
     }
-    public static inline function addMatLine( m: Vector<BandMatrix>
+    public static /* inline */ function addMatLine( m: Vector<BandMatrix>
                                             , v: Vector<Float>, derivs: Vector<Float>
                                             , x: Float, y: Float
                                             , j: Int, jj: Int, jinc: Int, nmat: Int ){
@@ -381,7 +424,7 @@ class Spiro {
             for( k in 0...jinc ) m[ jj ].a[ joff + k ] += y * derivs[ k ];
         }
     }
-    public static inline function spiroIter( s: Vector<Segment>, m: Vector<BandMatrix>
+    public static /* inline */ function spiroIter( s: Vector<Segment>, m: Vector<BandMatrix>
                                             , perm: Vector<Int>, v: Vector<Float>, n: Int, nmat: Int ){
         //int i, j, jthl, jthr, jk0l, jk0r, jk1l, jk1r, jk2l, jk2r, jinc, jj
         var dk: Float;
@@ -412,6 +455,7 @@ class Spiro {
         } else {
             jj = 0;
         }
+        trace( 'spiroIter derivs=' + derivs );
         var ty0: PointType;
         var ty1: PointType;
         var jthl: Int;
@@ -475,6 +519,7 @@ class Spiro {
             if( jthr >= 0 ) v[ jthr ] = mod2pi( v[ jthr ] );
             j += jinc;
         }
+        trace( 'spiroIter derivs=' + derivs );
         if( cyclic ){
             BandMatrix.copy( m, 0, m, nmat, nmat );
             BandMatrix.copy( m, 0, m, 2 * nmat, nmat );
@@ -500,7 +545,7 @@ class Spiro {
         }
         return norm;
     }
-    // consider rearrange returns at end to allow inline?
+    // consider rearrange returns at end to allow /* inline */?
     public static function checkFiniteness( segs: Vector<Segment>, len: Int ): Bool {
         // Check if all values are "finite", return true, else return fail=false
         for( i in 0...len ){
@@ -520,8 +565,9 @@ class Spiro {
         if( n_alloc < 5 )n_alloc = 5;
         var m = new Vector<BandMatrix>(n_alloc);
         for( n in 0...n_alloc ){
-            m[n].a = new Vector<Float>(11);
-            m[n].al = new Vector<Float>(5);
+            m[n] = new BandMatrix();
+            //m[n].a = new Vector<Float>(11);
+            //m[n].al = new Vector<Float>(5);
         }
         var v = new Vector<Float>( n_alloc );
         var perm = new Vector<Int>( n_alloc );
@@ -530,6 +576,7 @@ class Spiro {
         if( m != null && v != null && perm != null ){
             while( i++ < 60 ){
                 norm = spiroIter( s, m, perm, v, nseg, nmat );
+                trace( norm );
                 if( checkFiniteness( s, nseg ) ) break;
                 if( norm < 1e-12 ){
                     converged = 1;
@@ -539,7 +586,7 @@ class Spiro {
         }
         return converged;
     }
-    public static inline function spiro_seg_to_bpath( ks: Vector<Float>
+    public static /* inline */ function spiro_seg_to_bpath( ks: Vector<Float>
                                                     , x0: Float, y0: Float
                                                     , x1: Float, y1: Float
                                                     , bc: IBezierContext
@@ -600,14 +647,16 @@ class Spiro {
             }
         }
     }
-    public static inline function runSpiro( src: Vector<ControlPoint>, n: Int ){
+    public static /* inline */ function runSpiro( src: Vector<ControlPoint>, n: Int ){
         var out: Vector<Segment> = null;
         if( src == null || n <= 0 ) {
+            trace( 'src is null || n is less or equal to 0' );
             // return
         } else {
             var converged: Int;
             var nseg: Int;
             var s = setupPath( src, n );
+            trace( 'runSpiro s=' + s );
             if( s != null ){
                 nseg = src[ 0 ].pointType == OpenContour ? n - 1 : n;
                 converged = 1; // this value is for when nseg == 1; else actual value determined below
@@ -619,7 +668,7 @@ class Spiro {
         }
         return out;
     }
-    public static inline function spiro_to_bpath( s: Vector<Segment>, n: Int, bc: IBezierContext ){
+    public static /* inline */ function spiro_to_bpath( s: Vector<Segment>, n: Int, bc: IBezierContext ){
         var s0: Segment;
         var s1: Segment;
         if (s == null || n <= 0 || bc == null ) {
@@ -646,7 +695,7 @@ class Spiro {
             }
         }
     }
-    public static inline function get_knot_th( s: Vector<Segment>, i: Int ){
+    public static /* inline */ function get_knot_th( s: Vector<Segment>, i: Int ){
         var ends = new Vector<Vector<Float>>(2);
         ends[ 0 ] = new Vector<Float>( 4 );
         ends[ 1 ] = new Vector<Float>( 4 );

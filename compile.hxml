@@ -1,4 +1,4 @@
-# mac specific, last two line will need adjusting for pc and linux
+# mac specific, last two -cmd line will need adjusting for pc and linux
 -js test.js
 -cp src 
 -main Main
@@ -7,4 +7,7 @@
 -dce full
 --next
 -cmd echo '<!DOCTYPE html><meta charset="UTF-8"><html><body><script src="test.js"></script></body></html>' >index.html
--cmd open index.html
+# chrome seems to respect remap of traces to hx
+# but you will need to refresh for it to switch from js to hx
+# you may need to change name of Chrome for your setup
+-cmd open -a "Google Chrome Canary" index.html

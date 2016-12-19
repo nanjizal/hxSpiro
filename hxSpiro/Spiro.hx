@@ -3,6 +3,7 @@ package hxSpiro;
 // GNU GENERAL PUBLIC LICENSE Version 3, 29 June 2007
 // Work in progress Haxe port based on c# and js port.
 import haxe.ds.Vector;
+using Math;
 class Segment{
     public var x: Float;
     public var y: Float;
@@ -60,7 +61,6 @@ abstract PointType( String ) {
     var OpenContour     = '{';
     var EndOpenContour  = '}';
 }
-/// IBezierContext yet to decide on this.
 class Spiro {
     public static function spiroCPsToBezier0( spiros: Vector<ControlPoint>, n: Int, isClosed: Bool, bc: IBezierContext ):Bool {
             var s: Vector<Segment>;
@@ -76,9 +76,7 @@ class Spiro {
                 spiros[ n - 1 ].pointType = oldty_end;
                 spiros[0].pointType = oldty_start;
             }
-            trace( ' s ' + s );
             if( s != null ){
-                trace('spiro_to_bpath');
                 spiro_to_bpath( s, n, bc );
                 return true; // success
             }
@@ -106,7 +104,11 @@ class Spiro {
     }
     public static /* inline */ var N: Int = 4;
     public static /* inline */ function hyp( x: Float, y: Float ){
-        return Math.sqrt( x * x + y * y );
+        var h = Math.sqrt( x * x + y * y );
+        if( h.isNaN() == true ) {
+            trace( 'failed to calculate hyp ' + x + ' ' + y );
+        }
+        return h;
     }
     public static /* inline */ function copyFloats( from_:Vector<Float>, fromIndex: Int
                         , to_: Vector<Float>, toIndex: Int
@@ -214,43 +216,23 @@ class Spiro {
         integrate( ks, p, N );
         var ch = hyp( p.x, p.y );
         var th = Math.atan2( p.y, p.x );
-        trace( 'ch ' + ch );
-        trace( 'th ' + th );
-        trace( 'seg_ch ' + seg_ch );
         var l = ch / seg_ch;
-        
         var th_even = .5 * ks[ 0 ] + (1. / 48) * ks[ 2 ];
         var th_odd = .125 * ks[ 1 ] + (1. / 384) * ks[ 3 ] - th;
-        trace( 'th_even ' + th_even );
-        trace( 'th_odd '  + th_odd );
-        trace( 'l ' + l );
-        
         ends[ 0 ][ 0 ] = th_even - th_odd;
         ends[ 1 ][ 0 ] = th_even + th_odd;
         var k0_even = l * (ks[0] + .125 * ks[ 2 ]);
         var k0_odd = l * (.5 * ks[1] + (1. / 48) * ks[ 3 ]);
-        trace( 'th_even ' + th_even );
-        trace( 'th_odd '  + th_odd );
-        trace( 'l ' + l );
-        
-        
         ends[ 0 ][ 1 ] = k0_even - k0_odd;
         ends[ 1 ][ 1 ] = k0_even + k0_odd;
         var l2 = l * l;
         var k1_even = l2 * ( ks[ 1 ] + 0.125 * ks[ 3 ]);
         var k1_odd = l2 * .5 * ks[ 2 ];
-        trace( 'th_even ' + th_even );
-        trace( 'th_odd '  + th_odd );
-        trace( 'l2 ' + l2 );
-        
         ends[ 0 ][ 2 ] = k1_even - k1_odd;
         ends[ 1 ][ 2 ] = k1_even + k1_odd;
         var l3 = l2 * l;
         var k2_even = l3 * ks[ 2 ];
         var k2_odd = l3 * .5 * ks[ 3 ];
-        trace( 'th_even ' + th_even );
-        trace( 'th_odd '  + th_odd );
-        trace( 'l ' + l );
         ends[ 0 ][ 3 ] = k2_even - k2_odd;
         ends[ 1 ][ 3 ] = k2_even + k2_odd;
         return l;
@@ -262,12 +244,12 @@ class Spiro {
         var try_ends = new Vector<Vector<Float>>(2);
         try_ends[ 0 ] = new Vector<Float>(4);
         try_ends[ 1 ] = new Vector<Float>(4);
+        if( s.dChord == 0 ) return;
         computeEnds( s.ks, ends, s.dChord );
         for( i in 0...jinc ){
             for( j in 0...4 ) try_ks[ j ] = s.ks[ j ];
             try_ks[ i ] += delta;
             computeEnds( try_ks, try_ends, s.dChord );
-            trace( 'try_ends ' + try_ends );
             for( k in 0...2 ) for ( j in 0...4 ) derivs[ j ][ k ][ i ] = recip_d * ( try_ends[ k ][ j ] - ends[ k ][ j ] );
         }
     }
@@ -286,7 +268,6 @@ class Spiro {
                 break;
             }
         }
-        trace( 'setupPath rValid =' + rValid );
         if( rValid ) {
             var n_seg = src[0].pointType == OpenContour ? n - 1 : n;
             r = new Vector<Segment>( n_seg + 1 );
@@ -304,18 +285,18 @@ class Spiro {
                 seg.ks[ 2 ] = 0.0;
                 seg.ks[ 3 ] = 0.0;
             }
-            trace( '... r ' + r );
             r[ n_seg ].x = src[ n_seg % n ].x;
             r[ n_seg ].y = src[ n_seg % n ].y;
             r[ n_seg ].pointType = src[ n_seg % n ].pointType;
             var dx: Float;
             var dy: Float;
-            for (i in 0...n_seg ){
+            for( i in 0...n_seg ){
                 dx = r[ i + 1 ].x - r[ i ].x;
                 dy = r[ i + 1 ].y - r[ i ].y;
                 r[ i ].dChord = hyp( dx, dy );
-                if( Math.isFinite( dx ) || Math.isFinite( dy ) || Math.isFinite( ( r[ i ].dChord = hyp( dx, dy ) )) ) 
-                {
+                if(     !Math.isFinite( dx ) 
+                    ||  !Math.isFinite( dy ) 
+                    ||  !Math.isFinite( ( r[ i ].dChord )) ) {
                     rValid = false;
                     break;
                 }
@@ -437,8 +418,6 @@ class Spiro {
     
     public static /* inline */ function computeJinc( ty0: PointType, ty1: PointType ){
         var jinc: Int = 0;
-        trace( 'computeJinc typ0 ' + pointTypeTrace( ty0 ) + ' ty1 ' + pointTypeTrace( ty1 ) );
-        
         if( ty0 == G4 || ty1 == G4 || ty0 == Right || ty1 == Left ){
             jinc = 4;
         } else if( ty0 == G2 && ty1 == G2 ){
@@ -466,18 +445,13 @@ class Spiro {
         var joff: Int;
         if( jj >= 0 ){
             joff = ( j + 5 - jj + nmat ) % nmat;
-            trace( joff );
             if( nmat < 6 ){
                 joff = j + 5 - jj;
             } else if ( nmat == 6 ){
                 joff = 2 + ( j + 3 - jj + nmat ) % nmat;
             }
-            trace( 'joff ' + joff );
             v[jj] += x;
-            trace( 'derivs[  ] ' + derivs );
             for( k in 0...jinc ) {
-                trace( ' k  ' + k );
-                trace( 'derivs[ k ] ' + derivs[ k ] );
                 m[ jj ].a[ joff + k ] += y * derivs[ k ];
             }
         }
@@ -498,7 +472,6 @@ class Spiro {
             derivs[ i ][ 1 ] = new Vector<Float>(4);
             for( j in 0...4 ) derivs[ i ][ 1 ][ j ] = 0.;
         }
-        trace( 'spiroIter derivs=' + derivs );
         var pType = s[0].pointType;
         var cyclic: Bool = pType != OpenContour && pType != Corner;
         for( i in 0...nmat ){
@@ -516,7 +489,6 @@ class Spiro {
         } else {
             jj = 0;
         }
-        trace( 'spiroIter derivs=' + derivs );
         var ty0: PointType;
         var ty1: PointType;
         var jthl: Int;
@@ -538,7 +510,6 @@ class Spiro {
             jthl = jk0l = jk1l = jk2l = -1;
             jthr = jk0r = jk1r = jk2r = -1;
             pderivs( s[ i ], ends, derivs, jinc );
-            trace( 'pderivs ' + derivs );
             // constraints crossing left
             // this is as per java and js versions, c# has second if contained?
             if( ty0 == G4 || ty0 == G2 || ty0 == Left || ty0 == Right ){
@@ -551,7 +522,6 @@ class Spiro {
                 jk1l = jj++;
                 jk2l = jj++;
             }
-            
             // constraints on left
             if( (ty0 == Left || ty0 == Corner || ty0 == OpenContour || ty0 == G2) && jinc == 4 ){
                 if( ty0 != G2 ) jk1l = jj++;
@@ -572,40 +542,18 @@ class Spiro {
                 jk1r = (jj + 2) % nmat;
                 jk2r = (jj + 3) % nmat;
             }
-            
-            trace( 'jthl ' + jthl );
-            trace( 'jk0l ' + jk0l );
-            trace( 'jk1l ' + jk1l );
-            trace( 'jk2l ' + jk2l );
-            trace( 'jthr ' + jthr );
-            trace( 'jk0r ' + jk0r );
-            trace( 'jk1r ' + jk1r );
-            trace( 'jk2r ' + jk2r );
-            trace( 'jinc ' + jinc );
-            
-            trace( "____ addMatLine 0 " + i );
             addMatLine( m, v, derivs[0][0], th - ends[0][0], 1, j, jthl, jinc, nmat);
-            trace( "____ addMatLine 1 " + i );
             addMatLine( m, v, derivs[1][0], ends[0][1], -1, j, jk0l, jinc, nmat);
-            trace( "____ addMatLine 2 " + i );
             addMatLine( m, v, derivs[2][0], ends[0][2], -1, j, jk1l, jinc, nmat);
-            trace( "____ addMatLine 3 " + i );
             addMatLine( m, v, derivs[3][0], ends[0][3], -1, j, jk2l, jinc, nmat);
-            trace( "____ addMatLine 4 " + i );
             addMatLine( m, v, derivs[0][1], -ends[1][0], 1, j, jthr, jinc, nmat);
-            trace( "____ addMatLine 5 " + i );
             addMatLine( m, v, derivs[1][1], -ends[1][1], 1, j, jk0r, jinc, nmat);
-            trace( "____ addMatLine 6 " + i );
             addMatLine( m, v, derivs[2][1], -ends[1][2], 1, j, jk1r, jinc, nmat);
-            trace( "____ addMatLine 7 " + i );
             addMatLine( m, v, derivs[3][1], -ends[1][3], 1, j, jk2r, jinc, nmat);
-            trace( "____ addMatLine 8 " + i );
-            
             if( jthl >= 0 ) v[ jthl ] = mod2pi( v[ jthl ] );
             if( jthr >= 0 ) v[ jthr ] = mod2pi( v[ jthr ] );
             j += jinc;
         }
-        trace( 'spiroIter derivs=' + derivs );
         if( cyclic ){
             BandMatrix.copy( m, 0, m, nmat, nmat );
             BandMatrix.copy( m, 0, m, 2 * nmat, nmat );
@@ -656,12 +604,14 @@ class Spiro {
             //m[n].al = new Vector<Float>(5);
         }
         var v = new Vector<Float>( n_alloc );
+        for( i in 0...n_alloc ) v[ i ] = 0.0;
         var perm = new Vector<Int>( n_alloc );
+        for( i in 0...n_alloc ) perm[ i ] = 0;
         var i = 0;
         var converged = 0; // not solved (yet)
         if( m != null && v != null && perm != null ){
             while( i++ < 60 ){
-                norm = spiroIter( s, m, perm, v, nseg, nmat );
+                    norm = spiroIter( s, m, perm, v, nseg, nmat );
                 trace( norm );
                 if( checkFiniteness( s, nseg ) ) break;
                 if( norm < 1e-12 ){
@@ -677,12 +627,6 @@ class Spiro {
                                                     , x1: Float, y1: Float
                                                     , bc: IBezierContext
                                                     , depth: Int ){
-                                                        /*
-                double bend, seg_ch, seg_th, ch, th, scale, rot;  TODO: sort this out.
-                double th_even, th_odd, ul, vl, ur, vr;
-                double thsub, xmid, ymid, cth, sth;
-                double[] ksub = new double[4]; double[] xysub = new double[2]; double[] xy = new double[2];
-*/
         var th_even: Float;
         var th_odd: Float;
         var rot: Float;
@@ -742,7 +686,6 @@ class Spiro {
             var converged: Int;
             var nseg: Int;
             var s = setupPath( src, n );
-            trace( 'runSpiro s=' + s );
             if( s != null ){
                 nseg = src[ 0 ].pointType == OpenContour ? n - 1 : n;
                 converged = 1; // this value is for when nseg == 1; else actual value determined below

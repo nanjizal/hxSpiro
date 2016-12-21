@@ -3,6 +3,7 @@
 -cp src 
 -main Main
 -D js-flatten
+-D checkFitness
 -debug
 -dce full
 --next

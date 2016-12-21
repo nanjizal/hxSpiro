@@ -260,6 +260,7 @@ class Spiro {
     public static /* inline */ function setupPath( src:Vector<ControlPoint>, n: Int ): Vector<Segment> {
         // Verify that input values are within realistic limits
         var r: Vector<Segment> = null;
+#if checkFitness
         var rValid: Bool = true;
         for( i in 0...n ){
             if( !Math.isFinite( src[ i ].x ) || !Math.isFinite( src[ i ].y ) ) {
@@ -269,6 +270,7 @@ class Spiro {
             }
         }
         if( rValid ) {
+#end
             var n_seg = src[0].pointType == OpenContour ? n - 1 : n;
             r = new Vector<Segment>( n_seg + 1 );
             for( j in 0...( n_seg + 1 )) {
@@ -294,16 +296,19 @@ class Spiro {
                 dx = r[ i + 1 ].x - r[ i ].x;
                 dy = r[ i + 1 ].y - r[ i ].y;
                 r[ i ].dChord = hyp( dx, dy );
+#if checkFitness
                 if(     !Math.isFinite( dx ) 
                     ||  !Math.isFinite( dy ) 
                     ||  !Math.isFinite( ( r[ i ].dChord )) ) {
                     rValid = false;
                     break;
                 }
-                ;
+#end
                 r[ i ].segment_theta = Math.atan2( dy, dx );
+#if checkFitness
             }
             if( rValid ){
+#end
                 var ilast = n_seg - 1;
                 var pType: PointType;
                 for( i in 0...n_seg ){
@@ -316,8 +321,9 @@ class Spiro {
                     ilast = i;
                 }
             }
+#if checkFitness
         }
-        
+#end
         return r;
     }
     public static /* inline */ function bandec11( m: Vector<BandMatrix>, perm: Vector<Int>, n: Int ){
@@ -579,6 +585,7 @@ class Spiro {
         }
         return norm;
     }
+#if checkFitness
     // consider rearrange returns at end to allow /* inline */?
     public static function checkFiniteness( segs: Vector<Segment>, len: Int ): Bool {
         // Check if all values are "finite", return true, else return fail=false
@@ -589,6 +596,7 @@ class Spiro {
         }
         return true;
     }
+#end
     public static function solve( s: Vector<Segment>, nseg: Int ){
         var nmat = countVec( s, nseg );
         var n_alloc = nmat;
@@ -611,9 +619,10 @@ class Spiro {
         var converged = 0; // not solved (yet)
         if( m != null && v != null && perm != null ){
             while( i++ < 60 ){
-                    norm = spiroIter( s, m, perm, v, nseg, nmat );
-                trace( norm );
+                norm = spiroIter( s, m, perm, v, nseg, nmat );
+#if checkFitness
                 if( checkFiniteness( s, nseg ) ) break;
+#end
                 if( norm < 1e-12 ){
                     converged = 1;
                     break;

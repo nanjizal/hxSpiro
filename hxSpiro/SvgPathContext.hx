@@ -3,15 +3,23 @@ import hxSpiro.Spiro;// PointType
 import hxSpiro.IBezierContext;
 class SvgPathContext implements IBezierContext {
     var _d: String;
+    var _isOpen: Bool;
     public function new(){
         _d = '';
     }
     public var d( get, never ): String;
     public function get_d():String {
-        return _d + 'z';
+        if( _isOpen ){
+            var len = _d.length;
+            _d.substr( 0, _d.length - 1 );
+        } else {
+            _d + 'z';
+        }
+        return _d;
     }
-    public function moveTo( x: Float, y: Float, isOpen: Bool ): Void {
-        _d += 'M $x $y '; // ignoring isOpen?
+    public function moveTo( x: Float, y: Float, isOpen_: Bool ): Void {
+        _isOpen = isOpen_;
+        _d += 'M $x $y ';
     }
     public function lineTo( x: Float, y: Float ): Void {
         _d += 'L $x $y ';

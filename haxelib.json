@@ -1,0 +1,15 @@
+{
+	"name": "hxSpiro",
+	"license": "GPL",
+	"tags": ["cross","js"],
+	"description": "hxSpiro converts Spiro curves into Beizer curves",
+	"contributors": [
+    "Nanjizal"
+  ],
+	"releasenote": "See https://github.com/nanjizal/hxSpiro/blob/master/readme.md",
+	"version": "0.0.1",
+	"url": "https://github.com/nanjizal/hxSpiro",
+	"classPath": "/",
+	"dependencies": {
+  }
+}

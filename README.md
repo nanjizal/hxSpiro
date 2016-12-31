@@ -3,8 +3,10 @@ A curve drawing library, libSpiro port to Haxe to provide cross platform.
 
 Svg/Canvas javascript example use.
 https://github.com/nanjizal/hxSpiroDemo
-          
+
+
 Please see US_patent.md especially if your a US developer.
+
 ## Setup example.
 terminal setup demo commands, modify the last line of compile.hxml if your not on a mac.
 ```

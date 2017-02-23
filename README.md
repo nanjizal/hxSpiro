@@ -17,6 +17,7 @@ terminal setup demo commands, modify the last line of compile.hxml if your not o
 ```
 haxelib git hxSpiro https://github.com/nanjizal/hxSpiro
 haxelib git htmlHelper http://github.com/nanjizal/htmlHelper
+... repeat for all required repositories.
 git clone https://github.com/nanjizal/hxSpiroDemo
 cd hxSpiroDemo
 haxe compile.hxml

@@ -4,7 +4,7 @@
 
 **hxSpiro** curve drawing library a haxe port of libSpiro provide cross platform cross language spiro generation.
 
-![codepen spiro example](http://codepen.io/Nanjizal/pen/qReLLR)
+[codepen spiro example](http://codepen.io/Nanjizal/pen/qReLLR)
 
 Github demo use:
 - Svg/Canvas/Webgl javascript example use. https://github.com/nanjizal/hxSpiroDemo

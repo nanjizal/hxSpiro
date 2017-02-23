@@ -1,11 +1,16 @@
-# hxSpiro
-A curve drawing library, libSpiro port to Haxe to provide cross platform.
+## hxSpiro 
 
-Svg/Canvas javascript example use.
-https://github.com/nanjizal/hxSpiroDemo
+![spirocurve](https://cloud.githubusercontent.com/assets/20134338/23239737/d0993c08-f960-11e6-87d6-e54d39c94fe0.png)
 
+**hxSpiro** curve drawing library a haxe port of libSpiro provide cross platform cross language spiro generation.
 
-Please see US_patent.md especially if your a US developer.
+![codepen spiro example](http://codepen.io/Nanjizal/pen/qReLLR)
+
+Github demo use:
+- Svg/Canvas/Webgl javascript example use. https://github.com/nanjizal/hxSpiroDemo
+- Kha g2 ( js/c++ target )    example use. https://github.com/nanjizal/hxSpiroKhaG2
+
+```Please see US_patent.md especially if your a US developer.```
 
 ## Setup example.
 terminal setup demo commands, modify the last line of compile.hxml if your not on a mac.

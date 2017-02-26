@@ -27,3 +27,7 @@ Reference, based on JS and C# ports:
 https://github.com/wieslawsoltes/SpiroNet
 
 https://github.com/be5invis/libspiro-js
+
+Although you may also find this github very useful being thier source.
+
+https://github.com/fontforge/libspiro

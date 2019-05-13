@@ -1,6 +1,6 @@
-## hxSpiro 
+#DEPRECIATED, Now under MIT license - https://github.com/nanjizal/hxSpiro2019
 
-<sup><sup>I would like to have published as MIT but respected the original authors GPL3 licence wish, feel free to contact him in regard to alternate licencing, I would be happy to change it to MIT if he were to agree, but I was unable to convince him that MIT licence would allow much wider use of the algorithms contained - for games and apps. :(</sup></sup>
+## hxSpiro 
 
 ![spirocurve](https://cloud.githubusercontent.com/assets/20134338/23239737/d0993c08-f960-11e6-87d6-e54d39c94fe0.png)
 

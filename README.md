@@ -12,8 +12,6 @@ Github demo use:
 - Svg/Canvas/Webgl javascript example use. https://github.com/nanjizal/hxSpiroDemo
 - Kha g2 ( js/c++ target )    example use. https://github.com/nanjizal/hxSpiroKhaG2
 
-```Please see US_patent.md especially if your a US developer.```
-
 ## Setup example.
 terminal setup demo commands, modify the last line of compile.hxml if your not on a mac.
 ```
